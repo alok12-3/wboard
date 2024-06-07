@@ -1,7 +1,7 @@
-import React from 'react'
+import React from 'react';
 import { useRef, useEffect, useState, useContext } from 'react';
-import './NoteCanvas.css'
-import ToolContext from '../../Context/ToolContext'
+import './NoteCanvas.css';
+import ToolContext from '../../Context/ToolContext';
 
 const NoteCanvas = () => {
   const { penColor, penSize, textboxes, setTextboxes, eraserMode, curves, setCurves, undo, redo } = useContext(ToolContext);
@@ -24,8 +24,7 @@ const NoteCanvas = () => {
     setContext(ctx);
   }, []);
 
-  const startDrawing = ({ nativeEvent }) => {
-    const { offsetX, offsetY } = nativeEvent;
+  const startDrawing = (offsetX, offsetY) => {
     if (eraserMode) {
       eraseCurve(offsetX, offsetY);
     } else {
@@ -43,9 +42,8 @@ const NoteCanvas = () => {
     setPoints([]);
   };
 
-  const draw = ({ nativeEvent }) => {
+  const draw = (offsetX, offsetY) => {
     if (!isDrawing || eraserMode) return;
-    const { offsetX, offsetY } = nativeEvent;
     setPoints((prevPoints) => [...prevPoints, { x: offsetX, y: offsetY }]);
     drawLineSegment(offsetX, offsetY);
   };
@@ -147,15 +145,46 @@ const NoteCanvas = () => {
     });
   };
 
+  const handleMouseDown = (e) => {
+    const { offsetX, offsetY } = e.nativeEvent;
+    startDrawing(offsetX, offsetY);
+  };
+
+  const handleMouseMove = (e) => {
+    const { offsetX, offsetY } = e.nativeEvent;
+    draw(offsetX, offsetY);
+  };
+
+  const handleTouchStart = (e) => {
+    e.preventDefault();
+    const touch = e.touches[0];
+    const { offsetLeft, offsetTop } = canvasRef.current;
+    startDrawing(touch.clientX - offsetLeft, touch.clientY - offsetTop);
+  };
+
+  const handleTouchMove = (e) => {
+    e.preventDefault();
+    const touch = e.touches[0];
+    const { offsetLeft, offsetTop } = canvasRef.current;
+    draw(touch.clientX - offsetLeft, touch.clientY - offsetTop);
+  };
+
+  const handleTouchEnd = () => {
+    finishDrawing();
+  };
+
   return (
     <div className="note-canvas">
       <canvas
         ref={canvasRef}
         width={window.innerWidth}
         height={window.innerHeight - 50} /* Adjust height to fill remaining space */
-        onMouseDown={startDrawing}
+        onMouseDown={handleMouseDown}
         onMouseUp={finishDrawing}
-        onMouseMove={draw}
+        onMouseMove={handleMouseMove}
+        onTouchStart={handleTouchStart}
+        onTouchMove={handleTouchMove}
+        onTouchEnd={handleTouchEnd}
       />
       {textboxes.map((textbox) => (
         <textarea
