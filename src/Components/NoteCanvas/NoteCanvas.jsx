@@ -1,5 +1,4 @@
-import React from 'react';
-import { useRef, useEffect, useState, useContext } from 'react';
+import React, { useRef, useEffect, useState, useContext } from 'react';
 import './NoteCanvas.css';
 import ToolContext from '../../Context/ToolContext';
 
@@ -10,18 +9,22 @@ const NoteCanvas = () => {
   const [context, setContext] = useState(null);
   const [points, setPoints] = useState([]);
 
-  const handleTextChange = (id, newText) => {
-    setTextboxes(
-      textboxes.map((textbox) =>
-        textbox.id === id ? { ...textbox, text: newText } : textbox
-      )
-    );
-  };
-
   useEffect(() => {
     const canvas = canvasRef.current;
     const ctx = canvas.getContext('2d');
     setContext(ctx);
+
+    const resizeCanvas = () => {
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+    };
+
+    resizeCanvas();
+    window.addEventListener('resize', resizeCanvas);
+
+    return () => {
+      window.removeEventListener('resize', resizeCanvas);
+    };
   }, []);
 
   const startDrawing = (offsetX, offsetY) => {
@@ -31,15 +34,25 @@ const NoteCanvas = () => {
       setPoints([{ x: offsetX, y: offsetY }]);
       setIsDrawing(true);
     }
+
+    // Prevent default touch behavior to avoid scrolling while writing
+    canvasRef.current.addEventListener('touchmove', preventScroll, { passive: false });
+  };
+
+  const preventScroll = (event) => {
+    event.preventDefault();
   };
 
   const finishDrawing = () => {
     if (!eraserMode && points.length > 0) {
-     
+      drawBezierCurve();
       setCurves([...curves, points]);
     }
     setIsDrawing(false);
     setPoints([]);
+
+    // Remove the touchmove listener to enable scrolling again
+    canvasRef.current.removeEventListener('touchmove', preventScroll);
   };
 
   const draw = (offsetX, offsetY) => {
@@ -174,11 +187,11 @@ const NoteCanvas = () => {
   };
 
   return (
-    <div className="note-canvas">
+    <div className="note-canvas-container">
       <canvas
         ref={canvasRef}
         width={window.innerWidth}
-        height={window.innerHeight - 50} /* Adjust height to fill remaining space */
+        height={window.innerHeight}
         onMouseDown={handleMouseDown}
         onMouseUp={finishDrawing}
         onMouseMove={handleMouseMove}
