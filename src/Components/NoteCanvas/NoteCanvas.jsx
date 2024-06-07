@@ -35,7 +35,7 @@ const NoteCanvas = () => {
 
   const finishDrawing = () => {
     if (!eraserMode && points.length > 0) {
-      drawBezierCurve();
+     
       setCurves([...curves, points]);
     }
     setIsDrawing(false);
